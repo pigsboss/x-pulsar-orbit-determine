@@ -1,0 +1,16 @@
+#summary Development plan for x-ray pulsar-based satellite orbit determination software package.
+
+= Introduction =
+
+The development plan for x-ray pulsar-based satellite orbit determination software package is described in this page.
+
+
+= Details =
+
+Development plan:
+  # [SimulationPackage] development.
+    # Dynamic equation specification.
+    # X-ray pulsar TOA interpretation.
+    # Iterative satellite orbit estimation.
+    # Estimated satellite orbit status visualisation.
+  # *On-board package* development.
