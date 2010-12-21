@@ -8,7 +8,7 @@ The development plan for x-ray pulsar-based satellite orbit determination softwa
 = Details =
 
 Development plan:
-  # [SimulationPackage] development.
+  # [SimulationPackage Simulation package] development.
     # Dynamic equation specification.
     # X-ray pulsar TOA interpretation.
     # Iterative satellite orbit estimation.
