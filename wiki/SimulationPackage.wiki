@@ -7,7 +7,7 @@ A software simulates the satellite orbit determination is described in this page
 = Details =
 
 The simulated dynamic model features:
-  * Simple two-body dynamics,
+  * Simple [TwoBodyDynamics two-body dynamics],
   * Redundant X-ray pulsars,
   * Dynamics system error,
   * TOA measurement error.
