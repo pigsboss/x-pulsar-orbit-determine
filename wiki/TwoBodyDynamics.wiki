@@ -1,0 +1,13 @@
+#summary Two-body system dynamics specification.
+
+= Introduction =
+
+This page specifies the dynamics of a two-body system.
+
+
+= Details =
+
+Add your content here.  Format your content with:
+  * Text in *bold* or _italic_
+  * Headings, paragraphs, and lists
+  * Automatic links to other wiki pages
