@@ -1,7 +1,5 @@
-#include "cblas.h"
+#include "gsl/gsl_cblas.h"
 #include "satellite.h"
-#include <iostream>
-using namespace std;
 CSatellite::CSatellite() {
   m_fpState[0] = 0;
   m_fpState[1] = 1;

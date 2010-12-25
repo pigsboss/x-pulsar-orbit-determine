@@ -6,11 +6,12 @@
  * Enumerated and derived types
  */
 #define CBLAS_INDEX size_t  /* this may vary between platforms */
-enum CBLAS_ORDER     {CblasRowMajor=101, CblasColMajor=102};
+
+enum CBLAS_ORDER {CblasRowMajor=101, CblasColMajor=102};
 enum CBLAS_TRANSPOSE {CblasNoTrans=111, CblasTrans=112, CblasConjTrans=113};
-enum CBLAS_UPLO      {CblasUpper=121, CblasLower=122};
-enum CBLAS_DIAG      {CblasNonUnit=131, CblasUnit=132};
-enum CBLAS_SIDE      {CblasLeft=141, CblasRight=142};
+enum CBLAS_UPLO {CblasUpper=121, CblasLower=122};
+enum CBLAS_DIAG {CblasNonUnit=131, CblasUnit=132};
+enum CBLAS_SIDE {CblasLeft=141, CblasRight=142};
 
 /*
  * ===========================================================================
@@ -115,7 +116,7 @@ void cblas_srotm(const int N, float *X, const int incX,
 void cblas_drotg(double *a, double *b, double *c, double *s);
 void cblas_drotmg(double *d1, double *d2, double *b1, const double b2, double *P);
 void cblas_drot(const int N, double *X, const int incX,
-                double *Y, const int incY, const double c, const double s);
+                double *Y, const int incY, const double c, const double  s);
 void cblas_drotm(const int N, double *X, const int incX,
                 double *Y, const int incY, const double *P);
 
@@ -359,7 +360,7 @@ void cblas_cher(const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo,
                 const int N, const float alpha, const void *X, const int incX,
                 void *A, const int lda);
 void cblas_chpr(const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo,
-                const int N, const float *alpha, const void *X,
+                const int N, const float alpha, const void *X,
                 const int incX, void *A);
 void cblas_cher2(const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const int N,
                 const void *alpha, const void *X, const int incX,
@@ -390,7 +391,7 @@ void cblas_zher(const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo,
                 const int N, const double alpha, const void *X, const int incX,
                 void *A, const int lda);
 void cblas_zhpr(const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo,
-                const int N, const double *alpha, const void *X,
+                const int N, const double alpha, const void *X,
                 const int incX, void *A);
 void cblas_zher2(const enum CBLAS_ORDER order, const enum CBLAS_UPLO Uplo, const int N,
                 const void *alpha, const void *X, const int incX,
@@ -562,4 +563,5 @@ void cblas_zher2k(const enum CBLAS_ORDER Order, const enum CBLAS_UPLO Uplo,
                   const void *B, const int ldb, const double beta,
                   void *C, const int ldc);
 
+void cblas_xerbla(int p, const char *rout, const char *form, ...);
 #endif
