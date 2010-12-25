@@ -2,7 +2,7 @@ CFLAGS=-L/usr/local/lib -L/usr/lib -L/home/azzuro/usr/lib -I/usr/local/include -
 
 ALL=orbit
 
-COPTIONS=-O3
+COPTIONS=-O3 -finput-charset=UTF8
 
 all: $(ALL)
 
