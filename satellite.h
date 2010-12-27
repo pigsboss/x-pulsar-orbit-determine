@@ -1,10 +1,22 @@
+#define MAXNUMPULSAR 256
+
 class CSatellite {
   private:
     double m_dbMC; // Mass of the central body in kg.
     double m_dbMS; // Mass of the satellite in kg.
-    double m_fpState[6]; // State vector of the satellite in m or m/s.. state = {r_x, r_y, r_z, v_x, v_y, v_z}.
+/*
+*   State vector of the satellite in m or m/s. 
+*   state = {r_x, r_y, r_z, v_x, v_y, v_z}.
+*   (1, 0, 0) is unit vector with RA = 0 and Dec = 0, 
+*   (0, 1, 0) is unit vector with RA = 6 h and Dec = 0,
+*   (0, 0, 1) is unit vector with RA = arbitrary value and Dec = 90 deg.
+*/
+    double m_fpState[6];
     double m_dbStep; // Time step size of satellite Euler method in second.
     unsigned long long m_u64Clock; // Intrinsic clock. time = clock * step.
+    unsigned char m_u32NumPulsars; // Number of pulsars.
+    double m_fpRAPulsars[MAXNUMPULSAR]; // RA of pulsars.
+    double m_fpDecPulsars[MAXNUMPULSAR]; // Dec of pulsars.
   public:
     CSatellite();
     CSatellite(double *, double);
