@@ -91,4 +91,3 @@ void CSatellite::go(unsigned long long u64Steps) {
   }
   m_u64Clock = m_u64Clock + u64Steps;
 }
-
