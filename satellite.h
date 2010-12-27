@@ -1,4 +1,4 @@
-#define MAXNUMPULSAR 256
+#define MAXNUMPSR 256
 
 class CSatellite {
   private:
@@ -14,9 +14,11 @@ class CSatellite {
     double m_fpState[6];
     double m_dbStep; // Time step size of satellite Euler method in second.
     unsigned long long m_u64Clock; // Intrinsic clock. time = clock * step.
-    unsigned char m_u32NumPulsars; // Number of pulsars.
-    double m_fpRAPulsars[MAXNUMPULSAR]; // RA of pulsars.
-    double m_fpDecPulsars[MAXNUMPULSAR]; // Dec of pulsars.
+    unsigned char m_u32NumPsrs; // Number of pulsars.
+    double m_fpRAPsr[MAXNUMPSR]; // RA of pulsar, in hour.
+    double m_fpDecPsr[MAXNUMPSR]; // Dec of pulsar, in degree.
+    double m_fpPPsr[MAXNUMPSR]; // Period of pulsar.
+    double m_fpOffsetPsr[MAXNUMPSR]; // Offset of pulsar TOA (the first TOA according to the model).
   public:
     CSatellite();
     CSatellite(double *, double);
