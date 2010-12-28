@@ -158,7 +158,7 @@ void CSatellite::simulate(unsigned long u32NumSteps,
     fState << m_dbStep * m_u64Clock << ", " << m_fpState[0] << ", "
       << m_fpState[1] << ", " << m_fpState[2] << ", " << m_fpState[3]
       << ", " << m_fpState[4] << ", " << m_fpState[5] << endl;
-    
+    //TODO: Simulate TOA measurements.
   }
   fState.close();
   fTOA.close();
