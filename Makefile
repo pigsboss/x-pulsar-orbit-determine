@@ -1,6 +1,6 @@
 CFLAGS=-L/usr/local/lib -L/usr/lib -I/usr/local/include -I/usr/include
 
-ALL=orbit simulate
+ALL=sysinfo simulate
 
 COPTIONS=-O3 -finput-charset=UTF8
 
@@ -15,11 +15,11 @@ simulate.o: simulate.cpp
 satellite.o: satellite.cpp satellite.h
 	g++ $(CFLAGS) -c -o satellite.o satellite.cpp $(COPTIONS)
 
-orbit: orbit.o
-	g++ $(CFLAGS) -o orbit orbit.o
+sysinfo: sysinfo.o
+	g++ $(CFLAGS) -o sysinfo sysinfo.o
 
-orbit.o: orbit.cpp
-	g++ $(CFLAGS) -c -o orbit.o orbit.cpp $(COPTIONS)
+sysinfo.o: sysinfo.cpp
+	g++ $(CFLAGS) -c -o sysinfo.o sysinfo.cpp $(COPTIONS)
 
 clean:
 	rm *.o
