@@ -24,5 +24,5 @@ class CSatellite {
     CSatellite(double *, double);
     void getState(double *);
     double getTime();
-    void go(unsigned long long);
+    void simulate(unsigned long, unsigned long long);
 };

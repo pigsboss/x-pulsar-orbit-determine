@@ -8,9 +8,12 @@
 using namespace std;
 
 #define G 6.67428e-11
+#define SATELLITECONF "satellite.conf"
+#define SIMSTATE "simstate.out"
+#define SIMTOA "simtoa.out"
 
 CSatellite::CSatellite() {
-  ifstream conf("satellite.conf");
+  ifstream conf(SATELLITECONF);
   string line;
   size_t pos;
   if(conf.is_open()) {
@@ -64,6 +67,7 @@ CSatellite::CSatellite() {
     }
   }else {
     cout << "Error: open satellite configuration file failed." << endl;
+    exit;
   }
   m_u64Clock = 0;
 }
@@ -78,16 +82,32 @@ void CSatellite::getState(double * fpState) {
 double CSatellite::getTime() {
   return m_dbStep * double(m_u64Clock);
 }
-void CSatellite::go(unsigned long long u64Steps) {
+
+/*
+*  Simulates the dynamics and measurement of TOA.
+*  num_records: state vector and TOA measurement records output during simulation.
+*  num_steps: simulated steps between every other record.
+*  total simulated steps = num_steps * num_records.
+*  Time of simulation = intrinsic_time_step_size * num_steps * num_records.
+*/
+void CSatellite::simulate(unsigned long u32NumSteps, unsigned long long u64NumRecords) {
   unsigned long long i;
+  unsigned long j;
   double fpAcc[3]; // Acceleration vector.
   double dbR; // Norm of position vector.
-  for(i=0; i<u64Steps; i++) {
-    dbR = cblas_dnrm2(3, m_fpState, 1);
-    cblas_dscal(3, 0, fpAcc, 1);
-    cblas_daxpy(3, (-1.0) * G * m_dbMC / (dbR*dbR*dbR), m_fpState, 1, fpAcc, 1);
-    cblas_daxpy(3, m_dbStep, m_fpState+3, 1, m_fpState, 1);
-    cblas_daxpy(3, m_dbStep, fpAcc, 1, m_fpState+3, 1);
+  ofstream state(SIMSTATE);
+  if(!state.is_open()) {
+    cout << "Error: open satellite configuration file failed." << endl;
+    exit;
   }
-  m_u64Clock = m_u64Clock + u64Steps;
+  for(i=0; i<u64NumRecords; i++) {
+    for(j=0; j<u32NumSteps; j++) {
+      dbR = cblas_dnrm2(3, m_fpState, 1);
+      cblas_dscal(3, 0, fpAcc, 1);
+      cblas_daxpy(3, (-1.0) * G * m_dbMC / (dbR*dbR*dbR), m_fpState, 1, fpAcc, 1);
+      cblas_daxpy(3, m_dbStep, m_fpState+3, 1, m_fpState, 1);
+      cblas_daxpy(3, m_dbStep, fpAcc, 1, m_fpState+3, 1);
+      m_u64Clock = m_u64Clock + 1;
+    }
+  }
 }
