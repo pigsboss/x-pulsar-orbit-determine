@@ -2,12 +2,15 @@
 #include "satellite.h"
 #include <cstdlib>
 #include <cstddef>
+#include <cmath>
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <string>
 using namespace std;
 
 #define G 6.67428e-11
+#define PI 3.141592653589793
 #define SATELLITECONF "satellite.conf"
 #define PULSARCONF "pulsar.conf"
 #define SIMSTATE "simstate.out"
@@ -15,7 +18,7 @@ using namespace std;
 
 CSatellite::CSatellite() {
 /*
-*  Parse satellite configuration file.
+*   Parse satellite configuration file.
 */
   ifstream fSatellite(SATELLITECONF);
   string line;
@@ -78,7 +81,7 @@ CSatellite::CSatellite() {
   cout << "*\n";
   cout << "*** Pulsar configuration ***\n";
 /*
-*  Parse pulsar configuration file.
+*   Parse pulsar configuration file.
 */
   m_u8NumPsrs = 0;
   ifstream fPulsar(PULSARCONF);
@@ -120,11 +123,11 @@ double CSatellite::getTime() {
 }
 
 /*
-*  Simulates the dynamics and measurement of TOA.
-*  num_records: state vector and TOA measurement records during simulation.
-*  num_steps: simulated steps between every other record.
-*  total simulated steps = num_steps * num_records.
-*  Time of simulation = intrinsic_time_step_size * num_steps * num_records.
+*   Simulates the dynamics and measurement of TOA.
+*   num_records: state vector and TOA measurement records during simulation.
+*   num_steps: simulated steps between every other record.
+*   total simulated steps = num_steps * num_records.
+*   Time of simulation = intrinsic_time_step_size * num_steps * num_records.
 */
 void CSatellite::simulate(unsigned long u32NumSteps,
        unsigned long long u64NumRecords) {
@@ -137,16 +140,19 @@ void CSatellite::simulate(unsigned long u32NumSteps,
     cout << "Error: open simulated satellite state records file failed.\n";
     exit(1);
   }
+  fState.precision(15);
   fState << "Time, r_x, r_y, r_z, v_x, v_y, v_z\n";
   ofstream fTOA(SIMTOA, ios_base::trunc);
   if(!fTOA.is_open()) {
     cout << "Error: open simulated pulsars TOA records file failed.\n";
     exit(1);
   }
+  fTOA.precision(15);
+  fTOA << "TOA_SSB, TOA_Satellite\n";
   for(i=0; i<u64NumRecords; i++) {
     for(j=0; j<u32NumSteps; j++) {
 /*
-*  Dynamics simulation:
+*   Dynamics simulation:
 */
       dbR = cblas_dnrm2(3, m_fpState, 1);
       cblas_dscal(3, 0, fpAcc, 1);
@@ -159,6 +165,21 @@ void CSatellite::simulate(unsigned long u32NumSteps,
       << m_fpState[1] << ", " << m_fpState[2] << ", " << m_fpState[3]
       << ", " << m_fpState[4] << ", " << m_fpState[5] << endl;
     //TODO: Simulate TOA measurements.
+    unsigned char k;
+    double dbRAInRad, dbDecInRad;
+    double dbTOASSB, dbTOASatellite;
+    unsigned long long u64NumPhase;
+    for(k=0; k<m_u8NumPsrs; k++) {
+      dbRAInRad = m_fpRAPsr[k] * PI / 12.0;
+      dbDecInRad = m_fpDecPsr[k] * PI / 180.0;
+/*
+*   Number of whole phases reached SSB since simulation started:
+*/
+      u64NumPhase = (unsigned long long)(floor((m_u64Clock * m_dbStep -
+        m_fpOffsetPsr[k]) / m_fpPPsr[k]));
+      dbTOASSB = double(u64NumPhase + 1) * m_fpPPsr[k] + m_fpOffsetPsr[k];
+      fTOA << dbTOASSB << endl;
+    }
   }
   fState.close();
   fTOA.close();

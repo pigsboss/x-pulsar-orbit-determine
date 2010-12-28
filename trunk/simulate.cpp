@@ -5,6 +5,6 @@ int main() {
   CSatellite sat;
   double fpState[6];
   unsigned long long i;
-  sat.simulate(10000,1000);
+  sat.simulate(1,100000);
   return 0;
 }

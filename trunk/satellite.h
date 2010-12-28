@@ -18,7 +18,10 @@ class CSatellite {
     double m_fpRAPsr[MAXNUMPSR]; // RA of pulsar, in hour.
     double m_fpDecPsr[MAXNUMPSR]; // Dec of pulsar, in degree.
     double m_fpPPsr[MAXNUMPSR]; // Period of pulsar.
-    double m_fpOffsetPsr[MAXNUMPSR]; // Offset of pulsar TOA (the first TOA according to the model).
+/*
+*   Offset of pulsar TOA (the first TOA to reference according to the model).
+*/
+    double m_fpOffsetPsr[MAXNUMPSR];
   public:
     CSatellite();
     CSatellite(double *, double);
