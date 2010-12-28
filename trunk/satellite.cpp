@@ -9,68 +9,103 @@ using namespace std;
 
 #define G 6.67428e-11
 #define SATELLITECONF "satellite.conf"
+#define PULSARCONF "pulsar.conf"
 #define SIMSTATE "simstate.out"
 #define SIMTOA "simtoa.out"
 
 CSatellite::CSatellite() {
-  ifstream conf(SATELLITECONF);
+/*
+*  Parse satellite configuration file.
+*/
+  ifstream fSatellite(SATELLITECONF);
   string line;
   size_t pos;
-  if(conf.is_open()) {
-    while(conf.good()) {
-      getline(conf, line);
-      pos = line.find("MASS_CENTRAL_BODY");
-      if(pos != string::npos) {
-        m_dbMC = atof((line.substr(pos+18)).c_str());
-        cout << "Mass of the central body: " << m_dbMC << " kg" << endl;
-      }
-      pos = line.find("MASS_SATELLITE");
-      if(pos != string::npos) {
-        m_dbMS = atof((line.substr(pos+15)).c_str());
-        cout << "Mass of the satellite: " << m_dbMS << " kg" << endl;
-      }
-      pos = line.find("RX");
-      if(pos != string::npos) {
-        m_fpState[0] = atof((line.substr(pos+3)).c_str());
-        cout << "Initial r_x: " << m_fpState[0] << " m" << endl;
-      }
-      pos = line.find("RY");
-      if(pos != string::npos) {
-        m_fpState[1] = atof((line.substr(pos+3)).c_str());
-        cout << "Initial r_y: " << m_fpState[1] << " m" << endl;
-      }
-      pos = line.find("RZ");
-      if(pos != string::npos) {
-        m_fpState[2] = atof((line.substr(pos+3)).c_str());
-        cout << "Initial r_z: " << m_fpState[2] << " m" << endl;
-      }
-      pos = line.find("VX");
-      if(pos != string::npos) {
-        m_fpState[3] = atof((line.substr(pos+3)).c_str());
-        cout << "Initial v_x: " << m_fpState[3] << " m/s" << endl;
-      }
-      pos = line.find("VY");
-      if(pos != string::npos) {
-        m_fpState[4] = atof((line.substr(pos+3)).c_str());
-        cout << "Initial v_y: " << m_fpState[4] << " m/s" << endl;
-      }
-      pos = line.find("VZ");
-      if(pos != string::npos) {
-        m_fpState[5] = atof((line.substr(pos+3)).c_str());
-        cout << "Initial v_z: " << m_fpState[5] << " m/s" << endl;
-      }
-      pos = line.find("TIMESTEPSIZE");
-      if(pos != string::npos) {
-        m_dbStep = atof((line.substr(pos+13)).c_str());
-        cout << "Time step size: " << m_dbStep << " s" << endl;
-      }
-    }
-  }else {
+  if(!fSatellite.is_open()) {
     cout << "Error: open satellite configuration file failed." << endl;
     exit(1);
   }
+  cout << "*" << endl;
+  cout << "*** Satellite configuration ***" << endl;
+  while(fSatellite.good()) {
+    getline(fSatellite, line);
+    pos = line.find("MASS_CENTRAL_BODY");
+    if(pos != string::npos) {
+      m_dbMC = atof((line.substr(pos+18)).c_str());
+      cout << "Mass of the central body: " << m_dbMC << " kg" << endl;
+    }
+    pos = line.find("MASS_SATELLITE");
+    if(pos != string::npos) {
+      m_dbMS = atof((line.substr(pos+15)).c_str());
+      cout << "Mass of the satellite: " << m_dbMS << " kg" << endl;
+    }
+    pos = line.find("RX");
+    if(pos != string::npos) {
+      m_fpState[0] = atof((line.substr(pos+3)).c_str());
+      cout << "Initial r_x: " << m_fpState[0] << " m" << endl;
+    }
+    pos = line.find("RY");
+    if(pos != string::npos) {
+      m_fpState[1] = atof((line.substr(pos+3)).c_str());
+      cout << "Initial r_y: " << m_fpState[1] << " m" << endl;
+    }
+    pos = line.find("RZ");
+    if(pos != string::npos) {
+      m_fpState[2] = atof((line.substr(pos+3)).c_str());
+      cout << "Initial r_z: " << m_fpState[2] << " m" << endl;
+    }
+    pos = line.find("VX");
+    if(pos != string::npos) {
+      m_fpState[3] = atof((line.substr(pos+3)).c_str());
+      cout << "Initial v_x: " << m_fpState[3] << " m/s" << endl;
+    }
+    pos = line.find("VY");
+    if(pos != string::npos) {
+      m_fpState[4] = atof((line.substr(pos+3)).c_str());
+      cout << "Initial v_y: " << m_fpState[4] << " m/s" << endl;
+    }
+    pos = line.find("VZ");
+    if(pos != string::npos) {
+      m_fpState[5] = atof((line.substr(pos+3)).c_str());
+      cout << "Initial v_z: " << m_fpState[5] << " m/s" << endl;
+    }
+    pos = line.find("TIMESTEPSIZE");
+    if(pos != string::npos) {
+      m_dbStep = atof((line.substr(pos+13)).c_str());
+      cout << "Time step size: " << m_dbStep << " s" << endl;
+    }
+  }
+  fSatellite.close();
+  cout << "*" << endl;
+  cout << "*** Pulsar configuration ***" << endl;
+/*
+*  Parse pulsar configuration file.
+*/
+  m_u8NumPsrs = 0;
+  ifstream fPulsar(PULSARCONF);
+  if(!fPulsar.is_open()) {
+    cout << "Error: open pulsar configuration file failed." << endl;
+    exit(1);
+  }
+  while(fPulsar.good()) {
+    getline(fPulsar, line);
+    pos = line.find("PULSAR:");
+    if(pos != string::npos) {
+      m_fpRAPsr[m_u8NumPsrs] = atof((line.substr(pos+8)).c_str());
+      pos = line.find(",", pos+1);
+      m_fpDecPsr[m_u8NumPsrs] = atof((line.substr(pos+1)).c_str());
+      pos = line.find(",", pos+1);
+      m_fpPPsr[m_u8NumPsrs] = atof((line.substr(pos+1)).c_str());
+      pos = line.find(",", pos+1);
+      m_fpOffsetPsr[m_u8NumPsrs] = atof((line.substr(pos+1)).c_str());
+      cout << "Pulsar " << m_u8NumPsrs + 1 << ": R.A. = "
+        << m_fpRAPsr[m_u8NumPsrs] << " h, Dec = " << m_fpDecPsr[m_u8NumPsrs]
+        << " deg, P = " << m_fpPPsr[m_u8NumPsrs] << " s, TOA_0 = "
+        << m_fpOffsetPsr[m_u8NumPsrs] << " s." << endl;
+      m_u8NumPsrs = m_u8NumPsrs + 1;
+    }
+  }
+  fPulsar.close();
   m_u64Clock = 0;
-  conf.close();
 }
 CSatellite::CSatellite(double * fpInitState, double dbStep) {
   cblas_dcopy(6, fpInitState, 1, m_fpState, 1);
