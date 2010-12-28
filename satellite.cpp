@@ -13,8 +13,6 @@ using namespace std;
 #define PI 3.141592653589793
 #define SATELLITECONF "satellite.conf"
 #define PULSARCONF "pulsar.conf"
-#define SIMSTATE "simstate.out"
-#define SIMTOA "simtoa.out"
 
 CSatellite::CSatellite() {
 /*
@@ -43,33 +41,33 @@ CSatellite::CSatellite() {
     }
     pos = line.find("RX");
     if(pos != string::npos) {
-      m_fpState[0] = atof((line.substr(pos+3)).c_str());
-      cout << "Initial r_x: " << m_fpState[0] << " m\n";
+      m_state.m_fpState[0] = atof((line.substr(pos+3)).c_str());
+      cout << "Initial r_x: " << m_state.m_fpState[0] << " m\n";
     }
     pos = line.find("RY");
     if(pos != string::npos) {
-      m_fpState[1] = atof((line.substr(pos+3)).c_str());
-      cout << "Initial r_y: " << m_fpState[1] << " m\n";
+      m_state.m_fpState[1] = atof((line.substr(pos+3)).c_str());
+      cout << "Initial r_y: " << m_state.m_fpState[1] << " m\n";
     }
     pos = line.find("RZ");
     if(pos != string::npos) {
-      m_fpState[2] = atof((line.substr(pos+3)).c_str());
-      cout << "Initial r_z: " << m_fpState[2] << " m\n";
+      m_state.m_fpState[2] = atof((line.substr(pos+3)).c_str());
+      cout << "Initial r_z: " << m_state.m_fpState[2] << " m\n";
     }
     pos = line.find("VX");
     if(pos != string::npos) {
-      m_fpState[3] = atof((line.substr(pos+3)).c_str());
-      cout << "Initial v_x: " << m_fpState[3] << " m/s\n";
+      m_state.m_fpState[3] = atof((line.substr(pos+3)).c_str());
+      cout << "Initial v_x: " << m_state.m_fpState[3] << " m/s\n";
     }
     pos = line.find("VY");
     if(pos != string::npos) {
-      m_fpState[4] = atof((line.substr(pos+3)).c_str());
-      cout << "Initial v_y: " << m_fpState[4] << " m/s\n";
+      m_state.m_fpState[4] = atof((line.substr(pos+3)).c_str());
+      cout << "Initial v_y: " << m_state.m_fpState[4] << " m/s\n";
     }
     pos = line.find("VZ");
     if(pos != string::npos) {
-      m_fpState[5] = atof((line.substr(pos+3)).c_str());
-      cout << "Initial v_z: " << m_fpState[5] << " m/s\n";
+      m_state.m_fpState[5] = atof((line.substr(pos+3)).c_str());
+      cout << "Initial v_z: " << m_state.m_fpState[5] << " m/s\n";
     }
     pos = line.find("TIMESTEPSIZE");
     if(pos != string::npos) {
@@ -108,20 +106,8 @@ CSatellite::CSatellite() {
     }
   }
   fPulsar.close();
-  m_u64Clock = 0;
+  m_state.m_dbTime = 0.0;
 }
-CSatellite::CSatellite(double * fpInitState, double dbStep) {
-  cblas_dcopy(6, fpInitState, 1, m_fpState, 1);
-  m_dbStep = dbStep;
-  m_u64Clock = 0;
-}
-void CSatellite::getState(double * fpState) {
-  cblas_dcopy(6, m_fpState, 1, fpState, 1);
-}
-double CSatellite::getTime() {
-  return m_dbStep * double(m_u64Clock);
-}
-
 /*
 *   Simulates the dynamics and measurement of TOA.
 *   num_records: state vector and TOA measurement records during simulation.
@@ -131,56 +117,59 @@ double CSatellite::getTime() {
 */
 void CSatellite::simulate(unsigned long u32NumSteps,
        unsigned long long u64NumRecords) {
-  unsigned long long i;
+  unsigned long long i, u64NumPhase;
   unsigned long j;
   double fpAcc[3]; // Acceleration vector.
   double dbR; // Norm of position vector.
-  ofstream fState(SIMSTATE, ios_base::trunc);
-  if(!fState.is_open()) {
+  unsigned char k;
+  double dbRAInRad, dbDecInRad;
+  double dbTOASSB, dbTOASatellite;
+  ofstream fStateText("simstate.out", ios::trunc);
+  if(!fStateText.is_open()) {
     cout << "Error: open simulated satellite state records file failed.\n";
     exit(1);
   }
-  fState.precision(15);
-  fState << "Time, r_x, r_y, r_z, v_x, v_y, v_z\n";
-  ofstream fTOA(SIMTOA, ios_base::trunc);
-  if(!fTOA.is_open()) {
+  ofstream fStateBin("simstate.dat", ios::trunc|ios::binary);
+  if(!fStateBin.is_open()) {
+    cout << "Error: open simulated satellite state records file failed.\n";
+    exit(1);
+  }
+  ofstream fTOAText("simtoa.out", ios::trunc);
+  if(!fTOAText.is_open()) {
     cout << "Error: open simulated pulsars TOA records file failed.\n";
     exit(1);
   }
-  fTOA.precision(15);
-  fTOA << "TOA_SSB, TOA_Satellite\n";
+  ofstream fTOABin("simtoa.dat", ios::trunc|ios::binary);
+  if(!fTOABin.is_open()) {
+    cout << "Error: open simulated pulsars TOA records file failed.\n";
+    exit(1);
+  }
+  fStateText.precision(15);
+  fStateText << "Time, r_x, r_y, r_z, v_x, v_y, v_z\n";
+  fTOAText.precision(15);
+  fTOAText << "TOA_SSB, TOA_Satellite\n";
   for(i=0; i<u64NumRecords; i++) {
     for(j=0; j<u32NumSteps; j++) {
 /*
 *   Dynamics simulation:
 */
-      dbR = cblas_dnrm2(3, m_fpState, 1);
+      dbR = cblas_dnrm2(3, m_state.m_fpState, 1);
       cblas_dscal(3, 0, fpAcc, 1);
-      cblas_daxpy(3, (-1.0)*G*m_dbMC / (dbR*dbR*dbR), m_fpState, 1, fpAcc, 1);
-      cblas_daxpy(3, m_dbStep, m_fpState+3, 1, m_fpState, 1);
-      cblas_daxpy(3, m_dbStep, fpAcc, 1, m_fpState+3, 1);
-      m_u64Clock = m_u64Clock + 1;
+      cblas_daxpy(3, (-1.0)*G*m_dbMC /
+        (dbR*dbR*dbR), m_state.m_fpState, 1, fpAcc, 1);
+      cblas_daxpy(3, m_dbStep, m_state.m_fpState+3, 1, m_state.m_fpState, 1);
+      cblas_daxpy(3, m_dbStep, fpAcc, 1, m_state.m_fpState+3, 1);
+      m_state.m_dbTime = m_state.m_dbTime + m_dbStep;
     }
-    fState << m_dbStep * m_u64Clock << ", " << m_fpState[0] << ", "
-      << m_fpState[1] << ", " << m_fpState[2] << ", " << m_fpState[3]
-      << ", " << m_fpState[4] << ", " << m_fpState[5] << endl;
+    fStateText << m_state.m_dbTime << ", " << m_state.m_fpState[0] << ", "
+      << m_state.m_fpState[1] << ", " << m_state.m_fpState[2] << ", " 
+      << m_state.m_fpState[3] << ", " << m_state.m_fpState[4] << ", "
+      << m_state.m_fpState[5] << endl;
+    fStateBin.write((char *)(&m_state), sizeof(SState));
     //TODO: Simulate TOA measurements.
-    unsigned char k;
-    double dbRAInRad, dbDecInRad;
-    double dbTOASSB, dbTOASatellite;
-    unsigned long long u64NumPhase;
-    for(k=0; k<m_u8NumPsrs; k++) {
-      dbRAInRad = m_fpRAPsr[k] * PI / 12.0;
-      dbDecInRad = m_fpDecPsr[k] * PI / 180.0;
-/*
-*   Number of whole phases reached SSB since simulation started:
-*/
-      u64NumPhase = (unsigned long long)(floor((m_u64Clock * m_dbStep -
-        m_fpOffsetPsr[k]) / m_fpPPsr[k]));
-      dbTOASSB = double(u64NumPhase + 1) * m_fpPPsr[k] + m_fpOffsetPsr[k];
-      fTOA << dbTOASSB << endl;
-    }
   }
-  fState.close();
-  fTOA.close();
+  fStateBin.close();
+  fTOABin.close();
+  fStateText.close();
+  fTOAText.close();
 }

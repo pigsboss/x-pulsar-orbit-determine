@@ -1,5 +1,10 @@
 #define MAXNUMPSR 256
 
+struct SState {
+  double m_dbTime;
+  double m_fpState[6];
+};
+
 class CSatellite {
   private:
     double m_dbMC; // Mass of the central body in kg.
@@ -11,9 +16,8 @@ class CSatellite {
 *   (0, 1, 0) is unit vector with RA = 6 h and Dec = 0,
 *   (0, 0, 1) is unit vector with RA = arbitrary value and Dec = 90 deg.
 */
-    double m_fpState[6];
+    SState m_state;
     double m_dbStep; // Time step size of satellite Euler method in second.
-    unsigned long long m_u64Clock; // Intrinsic clock. time = clock * step.
     unsigned char m_u8NumPsrs; // Number of pulsars.
     double m_fpRAPsr[MAXNUMPSR]; // RA of pulsar, in hour.
     double m_fpDecPsr[MAXNUMPSR]; // Dec of pulsar, in degree.
@@ -24,8 +28,5 @@ class CSatellite {
     double m_fpOffsetPsr[MAXNUMPSR];
   public:
     CSatellite();
-    CSatellite(double *, double);
-    void getState(double *);
-    double getTime();
     void simulate(unsigned long, unsigned long long);
 };
