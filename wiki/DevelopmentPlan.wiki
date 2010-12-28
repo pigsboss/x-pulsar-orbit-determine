@@ -1,4 +1,5 @@
 #summary Development plan for x-ray pulsar-based satellite orbit determination software package.
+#labels Featured
 
 = Introduction =
 
