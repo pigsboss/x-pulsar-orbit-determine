@@ -1,4 +1,5 @@
 #summary Simulation package description.
+#labels Featured
 
 = Introduction =
 
