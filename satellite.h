@@ -14,7 +14,7 @@ class CSatellite {
     double m_fpState[6];
     double m_dbStep; // Time step size of satellite Euler method in second.
     unsigned long long m_u64Clock; // Intrinsic clock. time = clock * step.
-    unsigned char m_u32NumPsrs; // Number of pulsars.
+    unsigned char m_u8NumPsrs; // Number of pulsars.
     double m_fpRAPsr[MAXNUMPSR]; // RA of pulsar, in hour.
     double m_fpDecPsr[MAXNUMPSR]; // Dec of pulsar, in degree.
     double m_fpPPsr[MAXNUMPSR]; // Period of pulsar.
