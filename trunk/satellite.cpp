@@ -67,9 +67,10 @@ CSatellite::CSatellite() {
     }
   }else {
     cout << "Error: open satellite configuration file failed." << endl;
-    exit;
+    exit(1);
   }
   m_u64Clock = 0;
+  conf.close();
 }
 CSatellite::CSatellite(double * fpInitState, double dbStep) {
   cblas_dcopy(6, fpInitState, 1, m_fpState, 1);
@@ -95,10 +96,16 @@ void CSatellite::simulate(unsigned long u32NumSteps, unsigned long long u64NumRe
   unsigned long j;
   double fpAcc[3]; // Acceleration vector.
   double dbR; // Norm of position vector.
-  ofstream state(SIMSTATE);
-  if(!state.is_open()) {
-    cout << "Error: open satellite configuration file failed." << endl;
-    exit;
+  ofstream fState(SIMSTATE, ios_base::trunc);
+  if(!fState.is_open()) {
+    cout << "Error: open simulated satellite state records file failed." << endl;
+    exit(1);
+  }
+  fState << "Time, r_x, r_y, r_z, v_x, v_y, v_z" << endl;
+  ofstream fTOA(SIMTOA, ios_base::trunc);
+  if(!fTOA.is_open()) {
+    cout << "Error: open simulated pulsars TOA records file failed." << endl;
+    exit(1);
   }
   for(i=0; i<u64NumRecords; i++) {
     for(j=0; j<u32NumSteps; j++) {
@@ -109,5 +116,10 @@ void CSatellite::simulate(unsigned long u32NumSteps, unsigned long long u64NumRe
       cblas_daxpy(3, m_dbStep, fpAcc, 1, m_fpState+3, 1);
       m_u64Clock = m_u64Clock + 1;
     }
+    fState << m_dbStep * m_u64Clock << ", " << m_fpState[0] << ", "
+      << m_fpState[1] << ", " << m_fpState[2] << ", " << m_fpState[3]
+      << ", " << m_fpState[4] << ", " << m_fpState[5] << endl;
   }
+  fState.close();
+  fTOA.close();
 }
