@@ -1,5 +1,5 @@
-#include "gsl/gsl_cblas.h"
 #include "satellite.h"
+#include "gsl/gsl_cblas.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstddef>
@@ -10,12 +10,10 @@
 #include <string>
 using namespace std;
 
-#define G 6.67428e-11
-#define C0 299792458.0
-#define PI 3.141592653589793
-#define SATELLITECONF "satellite.conf"
-#define PULSARCONF "pulsar.conf"
-
+/*
+*
+*   Constructor:
+*/
 CSatellite::CSatellite() {
 /*
 *   Parse satellite configuration file.
@@ -121,12 +119,14 @@ CSatellite::CSatellite() {
     (m_prgPsrRec[k]).m_rgdbDir[1] = cos(rgdbDec[k] * PI / 180.0) *
       sin(rgdbRA[k] * PI / 12.0);
     (m_prgPsrRec[k]).m_rgdbDir[2] = sin(rgdbDec[k] * PI / 180.0);
-//    cout << (m_prgPsrRec[k]).m_rgdbDir[0] << ", " << (m_prgPsrRec[k]).m_rgdbDir[1] << ", " << (m_prgPsrRec[k]).m_rgdbDir[2] << endl;
   }
   fPulsar.close();
   m_state.m_dbTime = 0.0;
 }
-
+/*
+*
+*   Destructor:
+*/
 CSatellite::~CSatellite() {
   delete [] m_prgPsrRec;
 }
@@ -140,11 +140,13 @@ void CSatellite::simulate(double dbSimTime, unsigned long u32Inc) {
   double fpAcc[3]; // Acceleration vector.
   double dbR; // Norm of position vector.
   double dbTOASSB; // TOA at SSB.
-  double dbDist; // Distance between SSB and satellite along direction to the pulsar.
+  double dbDist; // Distance between SSB and satellite along the direction
+                 // to the pulsar.
   double dbTOASat; // TOA at satellite.
   double dbLenPulse; // Length of pulse. L = c_0 * period.
   double dbNPulses; // Number of integral pulses between SSB and satellite.
-  double dbFrac; // Length of fraction of pulse (round to the nearest integral pulse).
+  double dbFrac; // Length of fraction of pulse (round to the nearest
+                 // integral pulse).
   double rgdbState[6]; // Initial state of satellite.
   ofstream fStateBin;
   ofstream fStateText;
@@ -197,7 +199,8 @@ void CSatellite::simulate(double dbSimTime, unsigned long u32Inc) {
     fTOASatText.precision(15);
     fTOASatText << "TOA@Sat\n";
     dbLenPulse = C0 * (m_prgPsrRec[k]).m_dbPeriod;
-    cblas_dcopy(6, rgdbState, 1, m_state.m_rgdbState, 1); // Load saved initial state.
+    cblas_dcopy(6, rgdbState, 1, m_state.m_rgdbState, 1); // Load saved initial
+                                                          // state.
     m_state.m_dbTime = 0; // Reset satellite time.
     for(dbTOASSB = (m_prgPsrRec[k]).m_dbOffset; dbTOASSB < dbSimTime; 
       dbTOASSB = dbTOASSB + u32Inc * (m_prgPsrRec[k]).m_dbPeriod) {
@@ -209,10 +212,12 @@ void CSatellite::simulate(double dbSimTime, unsigned long u32Inc) {
 /*
 *   Orbital dynamics simulation (satellite state update):
 */
-      dbR = cblas_dnrm2(3, m_state.m_rgdbState, 1); // Calculate norm of (r_x, r_y, r_z).
+      dbR = cblas_dnrm2(3, m_state.m_rgdbState, 1); // Calculate norm of
+                                                    // (r_x, r_y, r_z).
       cblas_dscal(3, 0, fpAcc, 1); // Set acceleration to 0.
       cblas_daxpy(3, (-1.0)*G*m_dbMC /
-        (dbR*dbR*dbR), m_state.m_rgdbState, 1, fpAcc, 1); // Calculate two-body acceleration.
+        (dbR*dbR*dbR), m_state.m_rgdbState, 1, fpAcc, 1); // Calculate two-body
+                                                          // acceleration.
       cblas_daxpy(3, dbTOASSB - m_state.m_dbTime, m_state.m_rgdbState+3, 1,
         m_state.m_rgdbState, 1); // Update position.
       cblas_daxpy(3, dbTOASSB - m_state.m_dbTime, fpAcc, 1,
