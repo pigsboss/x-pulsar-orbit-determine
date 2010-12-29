@@ -181,41 +181,41 @@ void CSatellite::simulate(unsigned long u32NumSteps,
 *   TOA measurements simulation:
 */
   unsigned char k;
-  char pcFilename[32];
+  char szFilename[32];
   double dbTOASSB;
   ofstream fTOASSBBin;
   ofstream fTOASSBText;
-  ofstream fTOASatelliteBin;
-  ofstream fTOASatelliteText;
-  sprintf(pcFilename, "simtoasat%03d.dat", k);
-  fTOASatelliteBin.open(pcFilename, ios::binary|ios::trunc);
-  fTOASatelliteText << "TOA_SSB, R.A., Dec,\n";
-  if(!fTOASatelliteBin.is_open()) {
-    cout << "Error: open simulated pulse TOA at satellite file failed.\n";
-    exit(1);
-  }
-  sprintf(pcFilename, "simtoasat%03d.out", k);
-  fTOASatelliteText.open(pcFilename, ios::trunc);
-  if(!fTOASatelliteText.is_open()) {
-    cout << "Error: open simulated pulse TOA at satellite file failed.\n";
-    exit(1);
-  }
-  fTOASatelliteText.precision(15);
+  ofstream fTOASatBin;
+  ofstream fTOASatText;
   for(k=0; k < m_u8NPsrs; k++) {
-    sprintf(pcFilename, "simtoassb%03d.dat", k);
-    fTOASSBBin.open(pcFilename, ios::binary|ios::trunc);
+    sprintf(szFilename, "simtoassb%03d.dat", k);
+    fTOASSBBin.open(szFilename, ios::binary|ios::trunc);
     if(!fTOASSBBin.is_open()) {
       cout << "Error: open simulated pulse TOA at SSB file failed.\n";
       exit(1);
     }
-    sprintf(pcFilename, "simtoassb%03d.out", k);
-    fTOASSBText.open(pcFilename, ios::trunc);
+    sprintf(szFilename, "simtoassb%03d.out", k);
+    fTOASSBText.open(szFilename, ios::trunc);
     if(!fTOASSBText.is_open()) {
       cout << "Error: open simulated pulse TOA at SSB file failed.\n";
       exit(1);
     }
     fTOASSBText.precision(15);
     fTOASSBText << "TOA_SSB\n";
+    sprintf(szFilename, "simtoasat%03d.dat", k);
+    fTOASatBin.open(szFilename, ios::binary|ios::trunc);
+    if(!fTOASatBin.is_open()) {
+      cout << "Error: open simulated pulse TOA at satellite file failed.\n";
+      exit(1);
+    }
+    sprintf(szFilename, "simtoasat%03d.out", k);
+    fTOASatText.open(szFilename, ios::trunc);
+    if(!fTOASatText.is_open()) {
+      cout << "Error: open simulated pulse TOA at satellite file failed.\n";
+      exit(1);
+    }
+    fTOASatText.precision(15);
+    fTOASatText << "TOA_Sat\n";
     for(dbTOASSB = (m_prgPsrRec[k]).m_dbOffset; dbTOASSB < m_state.m_dbTime; 
       dbTOASSB = dbTOASSB + (m_prgPsrRec[k]).m_dbPeriod) {
       fTOASSBBin.write((char *)(&dbTOASSB), sizeof(double));
@@ -224,7 +224,7 @@ void CSatellite::simulate(unsigned long u32NumSteps,
     }
     fTOASSBBin.close();
     fTOASSBText.close();
+    fTOASatBin.close();
+    fTOASatText.close();
   }
-  fTOASatelliteBin.close();
-  fTOASatelliteText.close();
 }
