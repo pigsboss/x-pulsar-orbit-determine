@@ -69,11 +69,6 @@ CSatellite::CSatellite() {
       m_state.m_rgdbState[5] = atof((line.substr(pos+3)).c_str());
       cout << "Initial v_z: " << m_state.m_rgdbState[5] << " m/s\n";
     }
-    pos = line.find("TIMESTEPSIZE");
-    if(pos != string::npos) {
-      m_dbStep = atof((line.substr(pos+13)).c_str());
-      cout << "Time step size: " << m_dbStep << " s\n";
-    }
   }
   fSatellite.close();
   cout << "*\n";

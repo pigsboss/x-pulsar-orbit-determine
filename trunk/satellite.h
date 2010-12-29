@@ -37,8 +37,7 @@ class CSatellite {
   private:
     double m_dbMC; // Mass of the central body in kg.
     double m_dbMS; // Mass of the satellite in kg.
-    double m_dbStep; // Time step size of satellite Euler method in second.
-    unsigned char m_u8NPsrs; // Number of pulsars.
+    unsigned char m_u8NPsrs; // Number of pulsars in record.
     SState m_state;
     SPulsar * m_prgPsrRec;
   public:
