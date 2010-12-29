@@ -3,8 +3,6 @@
 using namespace std;
 int main() {
   CSatellite sat;
-  double fpState[6];
-  unsigned long long i;
-  sat.simulate(1,8640000);
+  sat.simulate(1,864);
   return 0;
 }
