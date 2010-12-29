@@ -11,6 +11,7 @@
 using namespace std;
 
 #define G 6.67428e-11
+#define C0 299792458.0
 #define PI 3.141592653589793
 #define SATELLITECONF "satellite.conf"
 #define PULSARCONF "pulsar.conf"
@@ -120,7 +121,7 @@ CSatellite::CSatellite() {
     (m_prgPsrRec[k]).m_rgdbDir[1] = cos(rgdbDec[k] * PI / 180.0) *
       sin(rgdbRA[k] * PI / 12.0);
     (m_prgPsrRec[k]).m_rgdbDir[2] = sin(rgdbDec[k] * PI / 180.0);
-    cout << (m_prgPsrRec[k]).m_rgdbDir[0] << ", " << (m_prgPsrRec[k]).m_rgdbDir[1] << ", " << (m_prgPsrRec[k]).m_rgdbDir[2] << endl;
+//    cout << (m_prgPsrRec[k]).m_rgdbDir[0] << ", " << (m_prgPsrRec[k]).m_rgdbDir[1] << ", " << (m_prgPsrRec[k]).m_rgdbDir[2] << endl;
   }
   fPulsar.close();
   m_state.m_dbTime = 0.0;
@@ -130,64 +131,43 @@ CSatellite::~CSatellite() {
   delete [] m_prgPsrRec;
 }
 /*
+*
 *   Simulates the dynamics and measurement of TOA.
-*   num_records: state vector and TOA measurement records during simulation.
-*   num_steps: simulated steps between every other record.
-*   total simulated steps = num_steps * num_records.
-*   Time of simulation = intrinsic_time_step_size * num_steps * num_records.
 */
-void CSatellite::simulate(unsigned long u32NumSteps,
-       unsigned long long u64NumRecords) {
-  unsigned long long i, u64NumPhase;
-  unsigned long j;
+void CSatellite::simulate(double dbSimTime, unsigned long u32Inc) {
+  char szFilename[32];
+  unsigned char k; // Index of pulsars.
   double fpAcc[3]; // Acceleration vector.
   double dbR; // Norm of position vector.
-  ofstream fStateText("simstate.out", ios::trunc);
-  if(!fStateText.is_open()) {
-    cout << "Error: open simulated satellite state records file failed.\n";
-    exit(1);
-  }
-  ofstream fStateBin("simstate.dat", ios::trunc|ios::binary);
-  if(!fStateBin.is_open()) {
-    cout << "Error: open simulated satellite state records file failed.\n";
-    exit(1);
-  }
-  fStateText.precision(15);
-  fStateText << "Time, r_x, r_y, r_z, v_x, v_y, v_z\n";
-  for(i=0; i<u64NumRecords; i++) {
-    for(j=0; j<u32NumSteps; j++) {
-/*
-*
-*   Dynamics simulation:
-*/
-      dbR = cblas_dnrm2(3, m_state.m_rgdbState, 1);
-      cblas_dscal(3, 0, fpAcc, 1);
-      cblas_daxpy(3, (-1.0)*G*m_dbMC /
-        (dbR*dbR*dbR), m_state.m_rgdbState, 1, fpAcc, 1);
-      cblas_daxpy(3, m_dbStep, m_state.m_rgdbState+3, 1, m_state.m_rgdbState, 1);
-      cblas_daxpy(3, m_dbStep, fpAcc, 1, m_state.m_rgdbState+3, 1);
-      m_state.m_dbTime = m_state.m_dbTime + m_dbStep;
-    }
-    fStateText << m_state.m_dbTime << ", " << m_state.m_rgdbState[0] << ", "
-      << m_state.m_rgdbState[1] << ", " << m_state.m_rgdbState[2] << ", " 
-      << m_state.m_rgdbState[3] << ", " << m_state.m_rgdbState[4] << ", "
-      << m_state.m_rgdbState[5] << endl;
-    fStateBin.write((char *)(&m_state), sizeof(SState));
-  }
-  fStateBin.close();
-  fStateText.close();
-/*
-*
-*   TOA measurements simulation:
-*/
-  unsigned char k;
-  char szFilename[32];
-  double dbTOASSB;
+  double dbTOASSB; // TOA at SSB.
+  double dbDist; // Distance between SSB and satellite along direction to the pulsar.
+  double dbTOASat; // TOA at satellite.
+  double dbLenPulse; // Length of pulse. L = c_0 * period.
+  double dbNPulses; // Number of integral pulses between SSB and satellite.
+  double dbFrac; // Length of fraction of pulse (round to the nearest integral pulse).
+  double rgdbState[6]; // Initial state of satellite.
+  ofstream fStateBin;
+  ofstream fStateText;
   ofstream fTOASSBBin;
   ofstream fTOASSBText;
   ofstream fTOASatBin;
   ofstream fTOASatText;
+  cblas_dcopy(6, m_state.m_rgdbState, 1, rgdbState, 1); // Save initial state.
   for(k=0; k < m_u8NPsrs; k++) {
+    sprintf(szFilename, "simstate%03d.dat", k);
+    fStateBin.open(szFilename, ios::trunc|ios::binary);
+    if(!fStateBin.is_open()) {
+      cout << "Error: open simulated satellite state records file failed.\n";
+      exit(1);
+    }
+    sprintf(szFilename, "simstate%03d.out", k);
+    fStateText.open(szFilename, ios::trunc);
+    if(!fStateText.is_open()) {
+      cout << "Error: open simulated satellite state records file failed.\n";
+      exit(1);
+    }
+    fStateText.precision(15);
+    fStateText << "Time, r_x, r_y, r_z, v_x, v_y, v_z\n";
     sprintf(szFilename, "simtoassb%03d.dat", k);
     fTOASSBBin.open(szFilename, ios::binary|ios::trunc);
     if(!fTOASSBBin.is_open()) {
@@ -201,7 +181,7 @@ void CSatellite::simulate(unsigned long u32NumSteps,
       exit(1);
     }
     fTOASSBText.precision(15);
-    fTOASSBText << "TOA_SSB\n";
+    fTOASSBText << "TOA@SSB\n";
     sprintf(szFilename, "simtoasat%03d.dat", k);
     fTOASatBin.open(szFilename, ios::binary|ios::trunc);
     if(!fTOASatBin.is_open()) {
@@ -215,13 +195,54 @@ void CSatellite::simulate(unsigned long u32NumSteps,
       exit(1);
     }
     fTOASatText.precision(15);
-    fTOASatText << "TOA_Sat\n";
-    for(dbTOASSB = (m_prgPsrRec[k]).m_dbOffset; dbTOASSB < m_state.m_dbTime; 
-      dbTOASSB = dbTOASSB + (m_prgPsrRec[k]).m_dbPeriod) {
+    fTOASatText << "TOA@Sat\n";
+    dbLenPulse = C0 * (m_prgPsrRec[k]).m_dbPeriod;
+    cblas_dcopy(6, rgdbState, 1, m_state.m_rgdbState, 1); // Load saved initial state.
+    m_state.m_dbTime = 0; // Reset satellite time.
+    for(dbTOASSB = (m_prgPsrRec[k]).m_dbOffset; dbTOASSB < dbSimTime; 
+      dbTOASSB = dbTOASSB + u32Inc * (m_prgPsrRec[k]).m_dbPeriod) {
+/*
+*   TOA at SSB simulation:
+*/
       fTOASSBBin.write((char *)(&dbTOASSB), sizeof(double));
       fTOASSBText << dbTOASSB << endl;
-      
+/*
+*   Orbital dynamics simulation (satellite state update):
+*/
+      dbR = cblas_dnrm2(3, m_state.m_rgdbState, 1); // Calculate norm of (r_x, r_y, r_z).
+      cblas_dscal(3, 0, fpAcc, 1); // Set acceleration to 0.
+      cblas_daxpy(3, (-1.0)*G*m_dbMC /
+        (dbR*dbR*dbR), m_state.m_rgdbState, 1, fpAcc, 1); // Calculate two-body acceleration.
+      cblas_daxpy(3, dbTOASSB - m_state.m_dbTime, m_state.m_rgdbState+3, 1,
+        m_state.m_rgdbState, 1); // Update position.
+      cblas_daxpy(3, dbTOASSB - m_state.m_dbTime, fpAcc, 1,
+        m_state.m_rgdbState+3, 1); // Update velocity.
+      m_state.m_dbTime = dbTOASSB; // Update time.
+      fStateText << m_state.m_dbTime << ", " << m_state.m_rgdbState[0] << ", "
+        << m_state.m_rgdbState[1] << ", " << m_state.m_rgdbState[2] << ", " 
+        << m_state.m_rgdbState[3] << ", " << m_state.m_rgdbState[4] << ", "
+        << m_state.m_rgdbState[5] << endl;
+      fStateBin.write((char *)(&m_state), sizeof(SState));
+/*
+*   TOA at satellite simulation:
+*/
+      dbDist = cblas_ddot(3, (m_prgPsrRec[k]).m_rgdbDir, 1,
+        m_state.m_rgdbState, 1); 
+      dbFrac = modf(dbDist/dbLenPulse, &dbNPulses);
+      if(dbFrac >= 0.5) {
+        dbTOASat = dbTOASSB - (1.0 - dbFrac) * (m_prgPsrRec[k]).m_dbPeriod;
+      }else if(dbFrac >= 0.0) {
+        dbTOASat = dbTOASSB + dbFrac * (m_prgPsrRec[k]).m_dbPeriod;
+      }else if(dbFrac >= -0.5) {
+        dbTOASat = dbTOASSB - (1.0 + dbFrac) * (m_prgPsrRec[k]).m_dbPeriod;
+      }else {
+        dbTOASat = dbTOASSB - dbFrac * (m_prgPsrRec[k]).m_dbPeriod;
+      }
+      fTOASatBin.write((char *)(&dbTOASat), sizeof(double));
+      fTOASatText << dbTOASat << endl;
     }
+    fStateBin.close();
+    fStateText.close();
     fTOASSBBin.close();
     fTOASSBText.close();
     fTOASatBin.close();
