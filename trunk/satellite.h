@@ -20,7 +20,7 @@ struct SPulse {
 struct SPulsar {
   double m_dbRA; // R.A. of pulsar, in hour.
   double m_dbDec; // Dec of pulsar, in degree.
-  double m_rgdbDirection[3]; // Direction vector of pulsar.
+  double m_rgdbDir[3]; // Direction vector of pulsar.
   double m_dbPeriod; // Period of pulsar.
 /*
 *   Offset of pulsar TOA (the first TOA to reference according to the model).
@@ -33,10 +33,11 @@ class CSatellite {
     double m_dbMC; // Mass of the central body in kg.
     double m_dbMS; // Mass of the satellite in kg.
     double m_dbStep; // Time step size of satellite Euler method in second.
-    unsigned char m_u8NumPsrs; // Number of pulsars.
-    SState m_sta;
+    unsigned char m_u8NPsrs; // Number of pulsars.
+    SState m_state;
     SPulsar * m_prgPsrRec;
   public:
     CSatellite();
+    ~CSatellite();
     void simulate(unsigned long, unsigned long long);
 };
