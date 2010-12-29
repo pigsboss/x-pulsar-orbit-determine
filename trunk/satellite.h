@@ -1,3 +1,8 @@
+#define G 6.67428e-11
+#define C0 299792458.0
+#define PI 3.141592653589793
+#define SATELLITECONF "satellite.conf"
+#define PULSARCONF "pulsar.conf"
 #define MAXNUMPSR 256
 
 struct SState {
