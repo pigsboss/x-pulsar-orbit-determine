@@ -39,5 +39,5 @@ class CSatellite {
   public:
     CSatellite();
     ~CSatellite();
-    void simulate(unsigned long, unsigned long long);
+    void simulate(double, unsigned long);
 };
