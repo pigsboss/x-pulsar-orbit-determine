@@ -1,5 +1,6 @@
 #include "gsl/gsl_cblas.h"
 #include "satellite.h"
+#include <cstdio>
 #include <cstdlib>
 #include <cstddef>
 #include <cmath>
@@ -41,33 +42,33 @@ CSatellite::CSatellite() {
     }
     pos = line.find("RX");
     if(pos != string::npos) {
-      m_state.m_fpState[0] = atof((line.substr(pos+3)).c_str());
-      cout << "Initial r_x: " << m_state.m_fpState[0] << " m\n";
+      m_state.m_pdbState[0] = atof((line.substr(pos+3)).c_str());
+      cout << "Initial r_x: " << m_state.m_pdbState[0] << " m\n";
     }
     pos = line.find("RY");
     if(pos != string::npos) {
-      m_state.m_fpState[1] = atof((line.substr(pos+3)).c_str());
-      cout << "Initial r_y: " << m_state.m_fpState[1] << " m\n";
+      m_state.m_pdbState[1] = atof((line.substr(pos+3)).c_str());
+      cout << "Initial r_y: " << m_state.m_pdbState[1] << " m\n";
     }
     pos = line.find("RZ");
     if(pos != string::npos) {
-      m_state.m_fpState[2] = atof((line.substr(pos+3)).c_str());
-      cout << "Initial r_z: " << m_state.m_fpState[2] << " m\n";
+      m_state.m_pdbState[2] = atof((line.substr(pos+3)).c_str());
+      cout << "Initial r_z: " << m_state.m_pdbState[2] << " m\n";
     }
     pos = line.find("VX");
     if(pos != string::npos) {
-      m_state.m_fpState[3] = atof((line.substr(pos+3)).c_str());
-      cout << "Initial v_x: " << m_state.m_fpState[3] << " m/s\n";
+      m_state.m_pdbState[3] = atof((line.substr(pos+3)).c_str());
+      cout << "Initial v_x: " << m_state.m_pdbState[3] << " m/s\n";
     }
     pos = line.find("VY");
     if(pos != string::npos) {
-      m_state.m_fpState[4] = atof((line.substr(pos+3)).c_str());
-      cout << "Initial v_y: " << m_state.m_fpState[4] << " m/s\n";
+      m_state.m_pdbState[4] = atof((line.substr(pos+3)).c_str());
+      cout << "Initial v_y: " << m_state.m_pdbState[4] << " m/s\n";
     }
     pos = line.find("VZ");
     if(pos != string::npos) {
-      m_state.m_fpState[5] = atof((line.substr(pos+3)).c_str());
-      cout << "Initial v_z: " << m_state.m_fpState[5] << " m/s\n";
+      m_state.m_pdbState[5] = atof((line.substr(pos+3)).c_str());
+      cout << "Initial v_z: " << m_state.m_pdbState[5] << " m/s\n";
     }
     pos = line.find("TIMESTEPSIZE");
     if(pos != string::npos) {
@@ -82,6 +83,8 @@ CSatellite::CSatellite() {
 *   Parse pulsar configuration file.
 */
   m_u8NumPsrs = 0;
+  double pdbRA[MAXNUMPSR], pdbDec[MAXNUMPSR];
+  double pdbPeriod[MAXNUMPSR], pdbOffset[MAXNUMPSR];
   ifstream fPulsar(PULSARCONF);
   if(!fPulsar.is_open()) {
     cout << "Error: open pulsar configuration file failed.\n";
@@ -91,19 +94,24 @@ CSatellite::CSatellite() {
     getline(fPulsar, line);
     pos = line.find("PULSAR:");
     if(pos != string::npos) {
-      m_fpRAPsr[m_u8NumPsrs] = atof((line.substr(pos+8)).c_str());
+      pdbRA[m_u8NumPsrs] = atof((line.substr(pos+8)).c_str());
       pos = line.find(",", pos+1);
-      m_fpDecPsr[m_u8NumPsrs] = atof((line.substr(pos+1)).c_str());
+      pdbDec[m_u8NumPsrs] = atof((line.substr(pos+1)).c_str());
       pos = line.find(",", pos+1);
-      m_fpPPsr[m_u8NumPsrs] = atof((line.substr(pos+1)).c_str());
+      pdbPeriod[m_u8NumPsrs] = atof((line.substr(pos+1)).c_str());
       pos = line.find(",", pos+1);
-      m_fpOffsetPsr[m_u8NumPsrs] = atof((line.substr(pos+1)).c_str());
+      pdbOffset[m_u8NumPsrs] = atof((line.substr(pos+1)).c_str());
       cout << "Pulsar " << m_u8NumPsrs + 1 << ": R.A. = "
-        << m_fpRAPsr[m_u8NumPsrs] << " h, Dec = " << m_fpDecPsr[m_u8NumPsrs]
-        << " deg, P = " << m_fpPPsr[m_u8NumPsrs] << " s, TOA_0 = "
-        << m_fpOffsetPsr[m_u8NumPsrs] << " s.\n";
+        << pdbRA[m_u8NumPsrs] << " h, Dec = " << pdbDec[m_u8NumPsrs]
+        << " deg, P = " << pdbPeriod[m_u8NumPsrs]*1.0e3 << " ms, TOA_0 = "
+        << pdbOffset[m_u8NumPsrs]*1.0e6 << " mus.\n";
       m_u8NumPsrs = m_u8NumPsrs + 1;
     }
+  }
+  m_pPulsar = new SPulsar[m_u8NumPsrs];
+  unsigned char k;
+  for(k=0; k<m_u8NumPsrs; k++) {
+    m_pulsar
   }
   fPulsar.close();
   m_state.m_dbTime = 0.0;
@@ -121,9 +129,6 @@ void CSatellite::simulate(unsigned long u32NumSteps,
   unsigned long j;
   double fpAcc[3]; // Acceleration vector.
   double dbR; // Norm of position vector.
-  unsigned char k;
-  double dbRAInRad, dbDecInRad;
-  double dbTOASSB, dbTOASatellite;
   ofstream fStateText("simstate.out", ios::trunc);
   if(!fStateText.is_open()) {
     cout << "Error: open simulated satellite state records file failed.\n";
@@ -134,42 +139,79 @@ void CSatellite::simulate(unsigned long u32NumSteps,
     cout << "Error: open simulated satellite state records file failed.\n";
     exit(1);
   }
-  ofstream fTOAText("simtoa.out", ios::trunc);
-  if(!fTOAText.is_open()) {
-    cout << "Error: open simulated pulsars TOA records file failed.\n";
-    exit(1);
-  }
-  ofstream fTOABin("simtoa.dat", ios::trunc|ios::binary);
-  if(!fTOABin.is_open()) {
-    cout << "Error: open simulated pulsars TOA records file failed.\n";
-    exit(1);
-  }
   fStateText.precision(15);
   fStateText << "Time, r_x, r_y, r_z, v_x, v_y, v_z\n";
-  fTOAText.precision(15);
-  fTOAText << "TOA_SSB, TOA_Satellite\n";
   for(i=0; i<u64NumRecords; i++) {
     for(j=0; j<u32NumSteps; j++) {
 /*
+*
 *   Dynamics simulation:
 */
-      dbR = cblas_dnrm2(3, m_state.m_fpState, 1);
+      dbR = cblas_dnrm2(3, m_state.m_pdbState, 1);
       cblas_dscal(3, 0, fpAcc, 1);
       cblas_daxpy(3, (-1.0)*G*m_dbMC /
-        (dbR*dbR*dbR), m_state.m_fpState, 1, fpAcc, 1);
-      cblas_daxpy(3, m_dbStep, m_state.m_fpState+3, 1, m_state.m_fpState, 1);
-      cblas_daxpy(3, m_dbStep, fpAcc, 1, m_state.m_fpState+3, 1);
+        (dbR*dbR*dbR), m_state.m_pdbState, 1, fpAcc, 1);
+      cblas_daxpy(3, m_dbStep, m_state.m_pdbState+3, 1, m_state.m_pdbState, 1);
+      cblas_daxpy(3, m_dbStep, fpAcc, 1, m_state.m_pdbState+3, 1);
       m_state.m_dbTime = m_state.m_dbTime + m_dbStep;
     }
-    fStateText << m_state.m_dbTime << ", " << m_state.m_fpState[0] << ", "
-      << m_state.m_fpState[1] << ", " << m_state.m_fpState[2] << ", " 
-      << m_state.m_fpState[3] << ", " << m_state.m_fpState[4] << ", "
-      << m_state.m_fpState[5] << endl;
+    fStateText << m_state.m_dbTime << ", " << m_state.m_pdbState[0] << ", "
+      << m_state.m_pdbState[1] << ", " << m_state.m_pdbState[2] << ", " 
+      << m_state.m_pdbState[3] << ", " << m_state.m_pdbState[4] << ", "
+      << m_state.m_pdbState[5] << endl;
     fStateBin.write((char *)(&m_state), sizeof(SState));
-    //TODO: Simulate TOA measurements.
   }
   fStateBin.close();
-  fTOABin.close();
   fStateText.close();
-  fTOAText.close();
+/*
+*
+*   TOA measurements simulation:
+*/
+  unsigned char k;
+  char pcFilename[32];
+  double dbTOASSB;
+  ofstream fTOASSBBin;
+  ofstream fTOASSBText;
+  ofstream fTOASatelliteBin;
+  ofstream fTOASatelliteText;
+  sprintf(pcFilename, "simtoasat%03d.dat", k);
+  fTOASatelliteBin.open(pcFilename, ios::binary|ios::trunc);
+  fTOASatelliteText << "TOA_SSB, R.A., Dec,\n";
+  if(!fTOASatelliteBin.is_open()) {
+    cout << "Error: open simulated pulse TOA at satellite file failed.\n";
+    exit(1);
+  }
+  sprintf(pcFilename, "simtoasat%03d.out", k);
+  fTOASatelliteText.open(pcFilename, ios::trunc);
+  if(!fTOASatelliteText.is_open()) {
+    cout << "Error: open simulated pulse TOA at satellite file failed.\n";
+    exit(1);
+  }
+  fTOASatelliteText.precision(15);
+  for(k=0; k < m_u8NumPsrs; k++) {
+    sprintf(pcFilename, "simtoassb%03d.dat", k);
+    fTOASSBBin.open(pcFilename, ios::binary|ios::trunc);
+    if(!fTOASSBBin.is_open()) {
+      cout << "Error: open simulated pulse TOA at SSB file failed.\n";
+      exit(1);
+    }
+    sprintf(pcFilename, "simtoassb%03d.out", k);
+    fTOASSBText.open(pcFilename, ios::trunc);
+    if(!fTOASSBText.is_open()) {
+      cout << "Error: open simulated pulse TOA at SSB file failed.\n";
+      exit(1);
+    }
+    fTOASSBText.precision(15);
+    fTOASSBText << "TOA_SSB\n";
+    for(dbTOASSB = (m_pPulsar[k]).m_dbOffset; dbTOASSB < m_state.m_dbTime; 
+      dbTOASSB = dbTOASSB + (m_pPulsar[k]).m_dbPeriod) {
+      fTOASSBBin.write((char *)(&dbTOASSB), sizeof(double));
+      fTOASSBText << dbTOASSB << endl;
+      
+    }
+    fTOASSBBin.close();
+    fTOASSBText.close();
+  }
+  fTOASatelliteBin.close();
+  fTOASatelliteText.close();
 }
