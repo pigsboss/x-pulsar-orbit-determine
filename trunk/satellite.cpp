@@ -137,6 +137,7 @@ void CSatellite::simulate(double dbSimTime, unsigned long u32Inc) {
   double dbTOASSB; // TOA at SSB.
   double dbDist; // Distance between SSB and satellite along the direction
                  // to the pulsar.
+  double dbV; // Speed of pulse against the satellite.
   double dbTOASat; // TOA at satellite.
   double dbLenPulse; // Length of pulse. L = c_0 * period.
   double dbNPulses; // Number of integral pulses between SSB and satellite.
@@ -227,16 +228,19 @@ void CSatellite::simulate(double dbSimTime, unsigned long u32Inc) {
 *   TOA at satellite simulation:
 */
       dbDist = cblas_ddot(3, (m_prgPsrRec[k]).m_rgdbDir, 1,
-        m_state.m_rgdbState, 1); 
+        m_state.m_rgdbState, 1);
+      dbV = cblas_ddot(3, (m_prgPsrRec[k]).m_rgdbDir, 1,
+        m_state.m_rgdbState + 3, 1) + C0;
+      dbV = C0 / dbV;
       dbFrac = modf(dbDist/dbLenPulse, &dbNPulses);
       if(dbFrac >= 0.5) {
-        dbTOASat = dbTOASSB - (1.0 - dbFrac) * (m_prgPsrRec[k]).m_dbPeriod;
+        dbTOASat = dbTOASSB - (1.0 - dbFrac) * (m_prgPsrRec[k]).m_dbPeriod * dbV;
       }else if(dbFrac >= 0.0) {
-        dbTOASat = dbTOASSB + dbFrac * (m_prgPsrRec[k]).m_dbPeriod;
+        dbTOASat = dbTOASSB + dbFrac * (m_prgPsrRec[k]).m_dbPeriod * dbV;
       }else if(dbFrac >= -0.5) {
-        dbTOASat = dbTOASSB - (1.0 + dbFrac) * (m_prgPsrRec[k]).m_dbPeriod;
+        dbTOASat = dbTOASSB - (1.0 + dbFrac) * (m_prgPsrRec[k]).m_dbPeriod * dbV;
       }else {
-        dbTOASat = dbTOASSB - dbFrac * (m_prgPsrRec[k]).m_dbPeriod;
+        dbTOASat = dbTOASSB - dbFrac * (m_prgPsrRec[k]).m_dbPeriod * dbV;
       }
       fTOASatBin.write((char *)(&dbTOASat), sizeof(double));
       fTOASatText << dbTOASat << endl;
